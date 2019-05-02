@@ -16,13 +16,16 @@ public:
     glob(const std::string &pattern);
     ~glob();
 
-    std::string current_match() const;
-    bool next();
-    bool is_valid() const;
-
     operator bool() const {
         return is_valid();
     }
+
+    void open(const std::string &pattern);
+    void close();
+
+    std::string current_match() const;
+    bool next();
+    bool is_valid() const;
 
 private:
     glob(const glob &) = delete;
@@ -34,7 +37,7 @@ private:
     WIN32_FIND_DATA find_data_;
     bool ok_;
 #else
-    std::string pattern_;
+    std::string file_pattern_;
     DIR *dir_;
     struct dirent *dir_entry_;
 #endif
