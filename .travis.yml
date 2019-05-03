@@ -1,5 +1,9 @@
 language: cpp
 
+env:
+  global:
+    - VERBOSE=1
+
 matrix:
   include:
     - os: linux
