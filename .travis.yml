@@ -1,0 +1,25 @@
+language: cpp
+
+matrix:
+  include:
+    - os: linux
+      dist: xenial
+      sudo: required
+      compiler: gcc
+    - os: osx
+      compiler: clang
+
+addons:
+  apt:
+    packages:
+      - cmake
+  brew:
+    packages:
+      - cmake
+
+before_script:
+  - mkdir build && cd build
+  - cmake .. -DCMAKE_BUILD_TYPE=Release
+
+script:
+  - make
