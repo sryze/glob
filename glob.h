@@ -1,16 +1,14 @@
 #ifndef GLOB_H
 #define GLOB_H
 
+#include <memory>
 #include <string>
-#ifdef _WIN32
-    #include <windows.h>
-#else
-    #include <dirent.h>
-#endif
 
 namespace glob {
 
-class glob
+class glob_impl;
+
+class glob final
 {
 public:
     glob(const std::string &pattern);
@@ -32,15 +30,7 @@ private:
     void operator=(const glob &) = delete;
 
 private:
-#ifdef _WIN32
-    HANDLE find_handle_;
-    WIN32_FIND_DATA find_data_;
-    bool ok_;
-#else
-    std::string file_pattern_;
-    DIR *dir_;
-    struct dirent *dir_entry_;
-#endif
+    std::unique_ptr<glob_impl> impl_;
 };
 
 } // namespace glob

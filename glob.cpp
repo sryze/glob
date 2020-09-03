@@ -1,5 +1,8 @@
 #include "glob.h"
-#ifndef _WIN32
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <dirent.h>
     #include <fnmatch.h>
 #endif
 
@@ -7,48 +10,70 @@ namespace glob {
 
 #ifdef _WIN32
 
+class glob_impl
+{
+public:
+    glob_impl():
+        find_handle(INVALID_HANDLE_VALUE),
+        find_data(),
+        has_next(false)
+    {}
+
+    HANDLE find_handle;
+    WIN32_FIND_DATA find_data;
+    bool has_next;
+};
+
 glob::glob(const std::string &pattern):
-    ok_(false),
-    find_handle_(INVALID_HANDLE_VALUE)
+    impl_(std::make_unique<glob_impl>())
 {
     open(pattern);
 }
 
-glob::~glob() {
+glob::~glob()
+{
     close();
 }
 
-void glob::open(const std::string &pattern) {
-    find_handle_ = FindFirstFileA(pattern.c_str(), &find_data_);
-    ok_ = find_handle_ != INVALID_HANDLE_VALUE;
+void glob::open(const std::string &pattern)
+{
+    impl_->find_handle =
+        FindFirstFileA(pattern.c_str(), &impl_->find_data);
+    impl_->has_next = impl_->find_handle != INVALID_HANDLE_VALUE;
 }
 
-void glob::close() {
-    if (find_handle_ != INVALID_HANDLE_VALUE) {
-        FindClose(find_handle_);
-        find_handle_ = INVALID_HANDLE_VALUE;
-        ok_ = false;
+void glob::close()
+{
+    if (impl_->find_handle != INVALID_HANDLE_VALUE) {
+        FindClose(impl_->find_handle);
+        impl_->find_handle = INVALID_HANDLE_VALUE;
+        impl_->has_next = false;
     }
 }
 
-std::string glob::current_match() const {
-    return find_data_.cFileName;
+std::string glob::current_match() const
+{
+    return impl_->find_data.cFileName;
 }
 
-bool glob::is_valid() const {
-    return ok_;
+bool glob::is_valid() const
+{
+    return impl_->has_next;
 }
 
-bool glob::next() {
-    ok_ = FindNextFileA(find_handle_, &find_data_) != 0;
-    return ok_;
+bool glob::next()
+{
+    impl_->has_next =
+        FindNextFileA(impl_->find_handle, &impl_->find_data) != 0;
+    return impl_->has_next;
 }
 
 #else // _WIN32
 
 namespace {
 
-std::pair<std::string, std::string> split_path(const std::string &path) {
+std::pair<std::string, std::string> split_path(const std::string &path)
+{
     std::string::size_type last_sep = path.find_last_of("/");
     if (last_sep != std::string::npos) {
         return std::make_pair(
@@ -60,42 +85,59 @@ std::pair<std::string, std::string> split_path(const std::string &path) {
 
 } // namespace
 
+class glob_impl
+{
+public:
+    glob_impl():
+        dir(nullptr),
+        dir_entry(nullptr)
+    {}
+
+    std::string file_pattern;
+    DIR *dir;
+    struct dirent *dir_entry;
+};
+
 glob::glob(const std::string &pattern):
-    dir_(nullptr),
-    dir_entry_(nullptr)
+    impl_(std::make_unique<glob_impl>())
 {
     open(pattern);
 }
 
-glob::~glob() {
+glob::~glob()
+{
     close();
 }
 
-void glob::open(const std::string &pattern) {
+void glob::open(const std::string &pattern)
+{
     auto dir_and_file = split_path(pattern);
-    dir_ = opendir(dir_and_file.first.c_str());
-    file_pattern_ = dir_and_file.second;
+    impl_->dir = opendir(dir_and_file.first.c_str());
+    impl_->file_pattern = dir_and_file.second;
 
-    if (dir_ != nullptr) {
+    if (impl_->dir != nullptr) {
         next();
     }
 }
 
-void glob::close() {
-    if (dir_ != nullptr) {
-        closedir(dir_);
-        dir_ = nullptr;
+void glob::close()
+{
+    if (impl_->dir != nullptr) {
+        closedir(impl_->dir);
+        impl_->dir = nullptr;
     }
 }
 
-std::string glob::current_match() const {
-    return dir_entry_->d_name;
+std::string glob::current_match() const
+{
+    return impl_->dir_entry->d_name;
 }
 
-bool glob::next() {
-    while ((dir_entry_ = readdir(dir_)) != nullptr) {
-        if (!fnmatch(file_pattern_.c_str(),
-                     dir_entry_->d_name,
+bool glob::next()
+{
+    while ((impl_->dir_entry = readdir(impl_->dir)) != nullptr) {
+        if (!fnmatch(impl_->file_pattern.c_str(),
+                     impl_->dir_entry->d_name,
                      FNM_CASEFOLD | FNM_NOESCAPE | FNM_PERIOD)) {
             return true;
         }
@@ -103,8 +145,9 @@ bool glob::next() {
     return false;
 }
 
-bool glob::is_valid() const {
-    return dir_ != nullptr && dir_entry_ != nullptr;
+bool glob::is_valid() const
+{
+    return impl_->dir != nullptr && impl_->dir_entry != nullptr;
 }
 
 #endif // !_WIN32
