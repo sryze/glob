@@ -1,3 +1,11 @@
-/.vs
-/.vscode
-/build
+.DS_Store
+Thumbs.db
+
+.vs
+.vscode
+build
+out
+target
+
+CMakeLists.txt.user*
+CMakeSettings.json
