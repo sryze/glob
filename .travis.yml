@@ -22,4 +22,4 @@ before_script:
   - cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS='-std=c++14'
 
 script:
-  - make
+  - cmake --build . --config Release
