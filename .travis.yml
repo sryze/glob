@@ -9,14 +9,6 @@ matrix:
     - os: osx
     - os: windows
 
-addons:
-  apt:
-    packages:
-      - cmake
-  brew:
-    packages:
-      - cmake
-
 before_script:
   - mkdir build && cd build
   - cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS='-std=c++14'
