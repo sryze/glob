@@ -24,7 +24,7 @@ public:
     bool has_next;
 };
 
-glob::glob(const std::string &pattern):
+glob::glob(const std::string &pattern, glob_flavor flavor):
     impl_(std::make_unique<glob_impl>())
 {
     open(pattern);
