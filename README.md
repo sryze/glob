@@ -7,6 +7,10 @@ Glob
 Glob is a simple cross-platform wrapper around system APIs for finding files
 based on glob expressions.
 
+## TODO
+
+* Custom glob parser with identical behavior across platforms
+
 [build]: https://travis-ci.org/sryze/glob
 [build_status]: https://travis-ci.org/sryze/glob.svg?branch=master
 [build_win]: https://ci.appveyor.com/project/sryze/glob/branch/master
