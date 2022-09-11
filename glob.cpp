@@ -20,7 +20,7 @@ public:
     {}
 
     HANDLE find_handle;
-    WIN32_FIND_DATA find_data;
+    WIN32_FIND_DATAA find_data;
     bool has_next;
 };
 
