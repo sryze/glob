@@ -5,6 +5,15 @@
 #else
     #include <dirent.h>
     #include <fnmatch.h>
+    
+#endif
+
+#define GLOB_UNIVERSAL_PATH_SEP "/"
+#define GLOB_ALL_PATH_SEP "/\\"
+#ifdef GLOB_WINDOWS
+    #define GLOB_NATIVE_PATH_SEP "\\"
+#else
+    #define GLOB_NATIVE_PATH_SEP GLOB_UNIVERSAL_PATH_SEP
 #endif
 
 namespace glob {
@@ -20,6 +29,7 @@ public:
         has_next(false)
     {}
 
+    std::string dir_path;
     HANDLE find_handle;
     WIN32_FIND_DATAA find_data;
     bool has_next;
@@ -35,16 +45,19 @@ public:
         dir_entry(nullptr)
     {}
 
+    std::string dir_path;
     std::string file_pattern;
     DIR *dir;
     struct dirent *dir_entry;
 };
 
+#endif // !GLOB_WINDOWS
+
 namespace {
 
 std::pair<std::string, std::string> split_path(const std::string &path)
 {
-    std::string::size_type last_sep = path.find_last_of("/");
+    std::string::size_type last_sep = path.find_last_of(GLOB_ALL_PATH_SEP);
     if (last_sep != std::string::npos) {
         return std::make_pair(
             std::string(path.begin(), path.begin() + last_sep),
@@ -55,9 +68,8 @@ std::pair<std::string, std::string> split_path(const std::string &path)
 
 } // anonymous namespace
 
-#endif // !GLOB_WINDOWS
-
 glob::glob(const std::string &pattern):
+    use_full_paths_(false),
     impl_(std::make_unique<glob_impl>())
 {
     open(pattern);
@@ -68,15 +80,25 @@ glob::~glob()
     close();
 }
 
+bool glob::use_full_paths() const {
+    return use_full_paths_;
+}
+
+void glob::use_full_paths(bool use_full_paths) {
+    use_full_paths_ = use_full_paths;
+}
+
 void glob::open(const std::string &pattern)
 {
+    auto dir_and_file = split_path(pattern);
+    impl_->dir_path = dir_and_file.first;
+
 #ifdef GLOB_WINDOWS
     impl_->find_handle =
         FindFirstFileA(pattern.c_str(), &impl_->find_data);
     impl_->has_next = impl_->find_handle != INVALID_HANDLE_VALUE;
 #else
-    auto dir_and_file = split_path(pattern);
-    impl_->dir = opendir(dir_and_file.first.c_str());
+    impl_->dir = opendir(impl_->dir_path.c_str());
     impl_->file_pattern = dir_and_file.second;
 
     if (impl_->dir != nullptr) {
@@ -103,11 +125,21 @@ void glob::close()
 
 std::string glob::current_match() const
 {
+    const char *filename;
 #ifdef GLOB_WINDOWS
-    return impl_->find_data.cFileName;
+    filename = impl_->find_data.cFileName;
 #else
-    return impl_->dir_entry->d_name;
+    filename = impl_->dir_entry->d_name;
 #endif
+    if (use_full_paths_) {
+        std::string path(impl_->dir_path);
+        path.append(GLOB_NATIVE_PATH_SEP);
+        path.append(filename);
+        return path;
+    }
+    else {
+        return filename;
+    }
 }
 
 bool glob::is_valid() const

@@ -14,6 +14,9 @@ public:
     glob(const std::string &pattern);
     ~glob();
 
+    bool use_full_paths() const;
+    void use_full_paths(bool use_full_paths);
+
     operator bool() const {
         return is_valid();
     }
@@ -30,6 +33,7 @@ private:
     void operator=(const glob &) = delete;
 
 private:
+    bool use_full_paths_;
     std::unique_ptr<glob_impl> impl_;
 };
 

@@ -20,6 +20,7 @@ int main(int argc, char **argv) {
     }
     for (int i = 1; i < argc; i++) {
         glob::glob glob(argv[i]);
+        glob.use_full_paths(true);
         while (glob) {
             std::cout << glob.current_match() << std::endl;
             glob.next();
