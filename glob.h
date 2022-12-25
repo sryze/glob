@@ -1,5 +1,5 @@
-#ifndef GLOB_H
-#define GLOB_H
+#ifndef GLOB_LIB_H
+#define GLOB_LIB_H
 
 #include <memory>
 #include <string>
@@ -35,4 +35,4 @@ private:
 
 } // namespace glob
 
-#endif // !GLOB_H
+#endif // !GLOB_LIB_H
